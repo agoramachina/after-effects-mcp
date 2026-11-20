@@ -160,10 +160,10 @@ server.resource(
   }
 );
 
-// Add a tool for running read-only scripts
+// Add a tool for running the predefined bridge scripts
 server.tool(
   "run-script",
-  "Run a read-only script in After Effects",
+  "Run one of the predefined bridge scripts in After Effects. Some only read the project, others create or change compositions and layers; get-help lists them.",
   {
     script: z.string().describe("Name of the predefined script to run"),
     parameters: z.record(z.string(), z.unknown()).optional().describe("Optional parameters for the script")
@@ -361,11 +361,17 @@ Available scripts:
 - createTextLayer: Create a new text layer
 - createShapeLayer: Create a new shape layer
 - createSolidLayer: Create a new solid layer
+- createCamera: Create a camera layer
+- setCompositionProperties: Set duration, frame rate, etc. on a composition
 - setLayerProperties: Set properties for a layer
+- batchSetLayerProperties: Set properties on several layers at once
 - setLayerKeyframe: Set a keyframe for a layer property
 - setLayerExpression: Set an expression for a layer property
 - applyEffect: Apply an effect to a layer
 - applyEffectTemplate: Apply a predefined effect template to a layer
+- duplicateLayer: Duplicate a layer
+- deleteLayer: Delete a layer
+- setLayerMask: Create or modify a layer mask
 
 Effect Templates:
 - gaussian-blur: Simple Gaussian blur effect

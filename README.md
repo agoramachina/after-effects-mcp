@@ -44,7 +44,6 @@
 - **Create shape layers** (rectangle, ellipse, polygon, star) with colors and strokes
 - **Create solid/adjustment layers** for backgrounds and effects
 - **Create camera layers** with configurable zoom and position
-- **Create null objects** for animation control
 - **Modify layer properties** like position, scale, rotation, opacity, timing
 - **Toggle 2D/3D mode** for layers
 - **Set blend modes** (normal, multiply, screen, etc.)
@@ -199,22 +198,49 @@ You can animate layers with:
 
 ## 🛠 Available MCP Tools
 
-| Command                     | Description                            |
+These are the tools the server registers:
+
+| Tool                                   | Description                                             |
+|----------------------------------------|---------------------------------------------------------|
+| `run-script`                           | Queue one of the bridge scripts listed below            |
+| `get-results`                          | Get the result of the last command                      |
+| `get-help`                             | Help for available commands                             |
+| `create-composition`                   | Create a new composition                                |
+| `setLayerKeyframe`                     | Add keyframe to layer property                          |
+| `setLayerExpression`                   | Add/remove expressions from properties                  |
+| `apply-effect`                         | Apply an effect to a layer                              |
+| `apply-effect-template`                | Apply a predefined effect template to a layer           |
+| `mcp_aftereffects_applyEffect`         | Like `apply-effect`, but waits a second and returns the result file |
+| `mcp_aftereffects_applyEffectTemplate` | Like `apply-effect-template`, but waits a second and returns the result file |
+| `mcp_aftereffects_get_effects_help`    | Help on effects and effect templates                    |
+| `test-animation`                       | Test keyframe or expression animation on a layer        |
+| `run-bridge-test`                      | Verify bridge communication and apply test effects      |
+
+### Scripts available through `run-script`
+
+The other bridge commands have no tool of their own. Pass the script name and its parameters to `run-script`, then read the outcome with `get-results`:
+
+| Script                      | Description                            |
 |-----------------------------|----------------------------------------|
-| `create-composition`        | Create a new composition               |
-| `run-script`                | Run a JS script inside AE              |
-| `get-results`               | Get script results                     |
-| `get-help`                  | Help for available commands            |
-| `setLayerKeyframe`          | Add keyframe to layer property         |
-| `setLayerExpression`        | Add/remove expressions from properties|
+| `getProjectInfo`            | Information about the current project  |
+| `listCompositions`          | List all compositions in the project   |
+| `getLayerInfo`              | Get layer info (position, 3D status)   |
+| `createComposition`         | Create a new composition               |
+| `setCompositionProperties`  | Set duration, frame rate, etc. on a composition |
+| `createTextLayer`           | Create a text layer                    |
+| `createShapeLayer`          | Create a shape layer                   |
+| `createSolidLayer`          | Create a solid or adjustment layer     |
+| `createCamera`              | Create camera layer                    |
 | `setLayerProperties`        | Set layer properties (position, scale, rotation, opacity, blendMode, threeDLayer, trackMatteType, enabled, etc.) |
-| `batchSetLayerProperties`  | Apply properties to multiple layers   |
-| `getLayerInfo`              | Get layer info (position, 3D status)  |
-| `createCamera`              | Create camera layer                   |
-| `createNullObject`          | Create null object for animation      |
-| `duplicateLayer`            | Duplicate a layer                     |
-| `deleteLayer`               | Delete a layer                        |
-| `setLayerMask`              | Create/modify layer masks             |
+| `batchSetLayerProperties`   | Apply properties to multiple layers    |
+| `setLayerKeyframe`          | Add keyframe to layer property         |
+| `setLayerExpression`        | Add/remove expressions from properties |
+| `applyEffect`               | Apply an effect to a layer             |
+| `applyEffectTemplate`       | Apply a predefined effect template to a layer |
+| `duplicateLayer`            | Duplicate a layer                      |
+| `deleteLayer`               | Delete a layer                         |
+| `setLayerMask`              | Create/modify layer masks              |
+| `bridgeTestEffects`         | Apply test effects (what `run-bridge-test` runs) |
 
 ## 👨‍💻 For Developers
 
