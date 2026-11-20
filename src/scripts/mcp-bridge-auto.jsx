@@ -1745,7 +1745,7 @@ function logToPanel(message) {
 }
 
 // Check for new commands
-function checkForCommands() {
+function checkForCommands(force) {
     // A docked panel can be closed while the timer is still scheduled. Its
     // controls are gone at that point, so stop polling instead of failing on
     // every tick.
@@ -1759,7 +1759,9 @@ function checkForCommands() {
         stopCommandChecker();
         return;
     }
-    if (!autoRun || isChecking) return;
+    // The timer only runs commands while auto-run is ticked; the manual button
+    // passes force=true so it still works with auto-run off.
+    if ((!autoRun && !force) || isChecking) return;
 
     isChecking = true;
     
@@ -1814,7 +1816,7 @@ function startCommandChecker() {
 var checkButton = panel.add("button", undefined, "Check for Commands Now");
 checkButton.onClick = function() {
     logToPanel("Manually checking for commands");
-    checkForCommands();
+    checkForCommands(true);
 };
 
 // Log startup
