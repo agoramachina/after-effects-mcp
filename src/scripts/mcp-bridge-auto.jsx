@@ -1281,12 +1281,28 @@ if (typeof JSON.stringify !== "function") {
     })();
 }
 
-// Detect AE version (AE 2025 = version 25.x, AE 2026 = version 26.x)
-var aeVersion = parseFloat(app.version);
-var isAE2025OrLater = aeVersion >= 25.0;
+// State that has to survive a re-run of this script: closing and reopening the
+// panel runs the whole file again in the same scripting engine.
+if (!$.global.__mcpBridgeState) {
+    $.global.__mcpBridgeState = { taskId: null, window: null, check: null };
+}
+var bridgeState = $.global.__mcpBridgeState;
 
-// Always create a floating palette window for AE 2025+
-var panel = new Window("palette", "MCP Bridge Auto", undefined);
+// A previous run may have left a floating window behind; close it so there is
+// only ever one bridge UI.
+if (bridgeState.window) {
+    try { bridgeState.window.close(); } catch (e) {}
+    bridgeState.window = null;
+}
+
+// When launched from the Window menu, After Effects passes a dockable Panel as
+// `this`, so build the UI inside it. When run via File > Scripts > Run Script
+// File there is no host panel, so fall back to a floating palette.
+var isDockedPanel = (this instanceof Panel);
+var panel = isDockedPanel ? this : new Window("palette", "MCP Bridge Auto", undefined, {resizeable: true});
+if (!isDockedPanel) {
+    bridgeState.window = panel;
+}
 panel.orientation = "column";
 panel.alignChildren = ["fill", "top"];
 panel.spacing = 10;
@@ -1299,15 +1315,11 @@ statusText.alignment = ["fill", "top"];
 // Add log area
 var logPanel = panel.add("panel", undefined, "Command Log");
 logPanel.orientation = "column";
+logPanel.alignment = ["fill", "fill"];
 logPanel.alignChildren = ["fill", "fill"];
 var logText = logPanel.add("edittext", undefined, "", {multiline: true, readonly: true});
 logText.preferredSize.height = 200;
-
-// AE 2025 warning
-if (isAE2025OrLater) {
-    var warning = panel.add("statictext", undefined, "AE 2025+: Dockable panels are not supported. Floating window only.");
-    warning.graphics.foregroundColor = warning.graphics.newPen(warning.graphics.PenType.SOLID_COLOR, [1,0.3,0,1], 1);
-}
+logText.minimumSize.height = 60;
 
 // Auto-run checkbox
 var autoRunCheckbox = panel.add("checkbox", undefined, "Auto-run commands");
@@ -1500,7 +1512,10 @@ function executeCommand(command, args) {
 
     logToPanel("Executing command: " + command);
     statusText.text = "Running: " + command;
-    panel.update();
+    // update() is a Window method; a docked Panel is not guaranteed to have it
+    if (panel.update) {
+        panel.update();
+    }
 
     try {
         logToPanel("Attempting to execute: " + command); // Log before switch
@@ -1708,14 +1723,30 @@ function updateCommandStatus(status) {
 
 // Log message to panel
 function logToPanel(message) {
-    var timestamp = new Date().toLocaleTimeString();
-    logText.text = timestamp + ": " + message + "\n" + logText.text;
+    // The log control is gone once a docked panel has been closed
+    try {
+        var timestamp = new Date().toLocaleTimeString();
+        logText.text = timestamp + ": " + message + "\n" + logText.text;
+    } catch (e) {}
 }
 
 // Check for new commands
 function checkForCommands() {
-    if (!autoRunCheckbox.value || isChecking) return;
-    
+    // A docked panel can be closed while the timer is still scheduled. Its
+    // controls are gone at that point, so stop polling instead of failing on
+    // every tick.
+    var autoRun;
+    try {
+        autoRun = autoRunCheckbox.value;
+    } catch (e) {
+        autoRun = undefined;
+    }
+    if (typeof autoRun !== "boolean") {
+        stopCommandChecker();
+        return;
+    }
+    if (!autoRun || isChecking) return;
+
     isChecking = true;
     
     try {
@@ -1748,8 +1779,21 @@ function checkForCommands() {
 }
 
 // Set up timer to check for commands
+function stopCommandChecker() {
+    if (bridgeState.taskId !== null) {
+        try { app.cancelTask(bridgeState.taskId); } catch (e) {}
+        bridgeState.taskId = null;
+    }
+}
+
 function startCommandChecker() {
-    app.scheduleTask("checkForCommands()", checkInterval, true);
+    // Re-running the script must not stack a second timer on top of the first
+    stopCommandChecker();
+    // scheduleTask evaluates its string in the global scope, but a panel opened
+    // from the Window menu runs in a scope of its own, where checkForCommands is
+    // not a global. Reach this instance's checker through the shared state.
+    bridgeState.check = checkForCommands;
+    bridgeState.taskId = app.scheduleTask("$.global.__mcpBridgeState.check()", checkInterval, true);
 }
 
 // Add manual check button
@@ -1767,7 +1811,16 @@ statusText.text = "Ready - Auto-run is " + (autoRunCheckbox.value ? "ON" : "OFF"
 // Start the command checker
 startCommandChecker();
 
-// Show the panel
-panel.center();
-panel.show();
+// Show the UI
+panel.onResizing = panel.onResize = function () {
+    this.layout.resize();
+};
+if (isDockedPanel) {
+    // A docked panel is already on screen; it only needs laying out
+    panel.layout.layout(true);
+    panel.layout.resize();
+} else {
+    panel.center();
+    panel.show();
+}
 
