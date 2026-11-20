@@ -1506,6 +1506,20 @@ function getLayerInfo() {
     return JSON.stringify(result, null, 2);
 }
 
+// ISO 8601 UTC timestamp. ExtendScript's Date has no toISOString().
+function isoTimestamp(date) {
+    function pad(value, width) {
+        var text = String(value);
+        while (text.length < width) {
+            text = "0" + text;
+        }
+        return text;
+    }
+    return date.getUTCFullYear() + "-" + pad(date.getUTCMonth() + 1, 2) + "-" + pad(date.getUTCDate(), 2) +
+        "T" + pad(date.getUTCHours(), 2) + ":" + pad(date.getUTCMinutes(), 2) + ":" + pad(date.getUTCSeconds(), 2) +
+        "." + pad(date.getUTCMilliseconds(), 3) + "Z";
+}
+
 // Execute command
 function executeCommand(command, args) {
     var result = "";
@@ -1623,7 +1637,7 @@ function executeCommand(command, args) {
         try {
             var resultObj = JSON.parse(resultString);
             // Add a timestamp to help identify if we're getting fresh results
-            resultObj._responseTimestamp = new Date().toISOString();
+            resultObj._responseTimestamp = isoTimestamp(new Date());
             resultObj._commandExecuted = command;
             resultString = JSON.stringify(resultObj, null, 2);
             logToPanel("Added timestamp to result JSON for tracking freshness.");
